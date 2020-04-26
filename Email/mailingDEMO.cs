@@ -83,12 +83,15 @@ namespace Email
             }
         }
 
+		//NOT WORKING - clientSecrets are not valid!
+		/*/
 		public async System.Threading.Tasks.Task SendMessageSAFEAsync(MimeMessage message)
 		{
 			string GMailAccount = login;
 
+			//NOT WORKING - clientSecrets are not valid!
 			var clientSecrets = new ClientSecrets
-			{
+			{	
 				ClientId = "545779208103-augc39m8hhvqe4st3rrphl854p2qjmee.apps.googleusercontent.com",
 				ClientSecret = "NGnYdo2rDWO2UBJrzizWQpjo"
 			};
@@ -118,8 +121,9 @@ namespace Email
 				client.Send(message);
 				await client.DisconnectAsync(true);
 			}
-			/**/
+
 		}
+		/**/
 		public void DownloadMessages()
 		{
 			using (var client = new ImapClient(new ProtocolLogger("imap.log")))
@@ -181,8 +185,8 @@ Sincerely,
 #if MAILKIT
 			MailRepository repo = new MailRepository("smtp.gmail.com", "imap.gmail.com", 465, true, "timemanagementprojectmff@gmail.com", "nxritutmirxtoyev");
 
-			//repo.SendMessage(CreateTestMessaage("timemanagementprojectmff@gmail.com"));
-			repo.SendMessageSAFEAsync(CreateTestMessaage("timemanagementprojectmff@gmail.com"));
+			repo.SendMessage(CreateTestMessaage("timemanagementprojectmff@gmail.com"));
+			//repo.SendMessageSAFEAsync(CreateTestMessaage("timemanagementprojectmff@gmail.com"));
 			
 			Console.WriteLine("Default message sent.");
 			Console.WriteLine("Press any key to display unread messages...");
