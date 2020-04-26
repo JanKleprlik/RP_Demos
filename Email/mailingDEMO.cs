@@ -4,6 +4,11 @@ using MailKit.Net.Smtp;
 using MailKit;
 using MimeKit;
 using MailKit.Net.Imap;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Auth.OAuth2.Flows;
+using Google.Apis.Util.Store;
+using MailKit.Security;
+using System.Threading;
 
 
 #if STANDARD
@@ -78,6 +83,43 @@ namespace Email
             }
         }
 
+		public async System.Threading.Tasks.Task SendMessageSAFEAsync(MimeMessage message)
+		{
+			string GMailAccount = login;
+
+			var clientSecrets = new ClientSecrets
+			{
+				ClientId = "545779208103-augc39m8hhvqe4st3rrphl854p2qjmee.apps.googleusercontent.com",
+				ClientSecret = "NGnYdo2rDWO2UBJrzizWQpjo"
+			};
+
+			var codeFlow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
+			{
+				// Cache tokens in ~/.local/share/google-filedatastore/CredentialCacheFolder on Linux/Mac
+				DataStore = new FileDataStore("CredentialCacheFolder", false),
+				Scopes = new[] { "https://mail.google.com/" },
+				ClientSecrets = clientSecrets
+			});
+
+			var codeReceiver = new LocalServerCodeReceiver();
+			var authCode = new AuthorizationCodeInstalledApp(codeFlow, codeReceiver);
+			var credential = await authCode.AuthorizeAsync(GMailAccount, CancellationToken.None);
+			if (authCode.ShouldRequestAuthorizationCode(credential.Token))
+			{
+				await credential.RefreshTokenAsync(CancellationToken.None);
+			}
+
+			var oauth2 = new SaslMechanismOAuth2(credential.UserId, credential.Token.AccessToken);
+
+			using (var client = new SmtpClient(new ProtocolLogger("smtp.log")))
+			{
+				await client.ConnectAsync(mailServerRecieve, port, SecureSocketOptions.SslOnConnect);
+				await client.AuthenticateAsync(oauth2);
+				client.Send(message);
+				await client.DisconnectAsync(true);
+			}
+			/**/
+		}
 		public void DownloadMessages()
 		{
 			using (var client = new ImapClient(new ProtocolLogger("imap.log")))
@@ -139,7 +181,9 @@ Sincerely,
 #if MAILKIT
 			MailRepository repo = new MailRepository("smtp.gmail.com", "imap.gmail.com", 465, true, "timemanagementprojectmff@gmail.com", "nxritutmirxtoyev");
 
-			repo.SendMessage(CreateTestMessaage("timemanagementprojectmff@gmail.com"));
+			//repo.SendMessage(CreateTestMessaage("timemanagementprojectmff@gmail.com"));
+			repo.SendMessageSAFEAsync(CreateTestMessaage("timemanagementprojectmff@gmail.com"));
+			
 			Console.WriteLine("Default message sent.");
 			Console.WriteLine("Press any key to display unread messages...");
 			Console.ReadKey();
